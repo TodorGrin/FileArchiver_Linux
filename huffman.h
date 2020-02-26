@@ -9,7 +9,7 @@ class Huffman {
 	private:
 		struct Tree;
 
-		static int* getCharFrequency(const char* fileName);
+		static int* getCharFrequency(string fileName);
 		static Tree* buildTree(int *charFrequency);
 		static string* getCharCodes(Tree *tree);
 		static void getCharCodesRec(string *codes, Tree *tree, string code = "");
@@ -18,7 +18,8 @@ class Huffman {
 	public:
 		Huffman();
 
-		void compress(const char* inFile, const char* outFile);
+		void compress(string inFile, string outFile);
+		void decompress(string inFile, string outFile);
 };
 
 

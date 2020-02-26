@@ -7,7 +7,8 @@ int main(int argc, char *argv[]) {
 	QApplication a(argc, argv);
 
 	Huffman h;
-	h.compress("test.txt", "out.txt");
+	//h.compress("FPU.zip", "out.txt");
+	//h.decompress("out.txt", "FPU2.zip");
 
 	MainWindow w;
 	w.show();
