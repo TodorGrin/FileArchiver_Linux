@@ -66,21 +66,22 @@ string* Huffman::getCharCodes(Tree* tree) {
 	return codes;
 }
 
-void Huffman::compress(string inFile, string outFile) {
+void Huffman::compress(string inFile, ostream &os) {
 	int *f = getCharFrequency(inFile);
 	Tree *t = buildTree(f);
 	string *codes = getCharCodes(t);
 
-	FILE *inF, *outF;
+	FILE *inF;
 	fopen_s(&inF, inFile.c_str(), "rb");
-	fopen_s(&outF, outFile.c_str(), "wb");
-	fseek(outF, sizeof(int), SEEK_SET);
+
+	int begin = os.tellp();
+	os.seekp(sizeof(int), ios::cur);
 
 	int bytes = 0, inC = 0, outC = 0;
 	int size = 0;
 
 	for (int c = 0; c < 256; ++c)
-		fwrite((char*) &f[c], 1, 4, outF);
+		os.write((char*) &f[c], sizeof(int));
 
 	while ((inC = fgetc(inF)) != EOF) {
 		++size;
@@ -90,7 +91,7 @@ void Huffman::compress(string inFile, string outFile) {
 			++bytes;
 
 			if (bytes == 8) {
-				fputc(outC, outF);
+				os.put(outC);
 				outC = 0;
 				bytes = 0;
 			}
@@ -98,31 +99,30 @@ void Huffman::compress(string inFile, string outFile) {
 	}
 
 	if (bytes > 0)
-		fputc(outC, outF);
+		os.put(outC);
 
-	fseek(outF, 0, SEEK_SET);
-	fwrite((char*) &size, 1, 4, outF);
+	os.seekp(begin);
+	os.write((char*) &size, sizeof(int));
+	os.seekp(0, ios::end);
 
 	fclose(inF);
-	fclose(outF);
 }
 
-void Huffman::decompress(string inFile, string outFile) {
-	FILE *inF, *outF;
-	fopen_s(&inF, inFile.c_str(), "rb");
+void Huffman::decompress(istream &is, string outFile) {
+	FILE *outF;
 	fopen_s(&outF, outFile.c_str(), "wb");
 
 	int size, inC = 0, charsWritten = 0;
 	int charFrequency[256];
 
-	fread((char*) &size, 1, 4, inF);
+	is.read((char*) &size, sizeof(size));
 
 	for (int c = 0; c < 256; ++c)
-		fread((char*) &charFrequency[c], 1, 4, inF);
+		is.read((char*) &charFrequency[c], sizeof(charFrequency[c]));
 
 	Tree *tree = buildTree(charFrequency), *cur = tree;
 
-	while ((inC = fgetc(inF)) != EOF) {
+	while ((inC = is.get()) != EOF && charsWritten < size) {
 		for (int i = 0; i < 8; ++i) {
 			if (inC & (1 << i))
 				cur = cur->right;
@@ -140,6 +140,5 @@ void Huffman::decompress(string inFile, string outFile) {
 		}
 	}
 
-	fclose(inF);
 	fclose(outF);
 }

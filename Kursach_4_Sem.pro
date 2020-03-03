@@ -16,11 +16,17 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    archive.cpp \
+    centraldirectory.cpp \
+    fileheader.cpp \
     huffman.cpp \
     main.cpp \
     mainwindow.cpp
 
 HEADERS += \
+    archive.h \
+    centraldirectory.h \
+    fileheader.h \
     huffman.h \
     mainwindow.h
 

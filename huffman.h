@@ -2,6 +2,7 @@
 #define HUFFMAN_H
 
 #include <string>
+#include <istream>
 
 using namespace std;
 
@@ -18,9 +19,27 @@ class Huffman {
 	public:
 		Huffman();
 
-		void compress(string inFile, string outFile);
-		void decompress(string inFile, string outFile);
+		void compress(string inFile, ostream &os);
+		void decompress(istream &is, string outFile);
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -1,14 +1,26 @@
 #include "mainwindow.h"
 #include <QApplication>
 #include <iostream>
-#include "huffman.h"
+#include <fstream>
+#include "archive.h"
 
 int main(int argc, char *argv[]) {
 	QApplication a(argc, argv);
 
-	Huffman h;
-	//h.compress("FPU.zip", "out.txt");
-	//h.decompress("out.txt", "FPU2.zip");
+	{
+		Archive ar;
+		ar.addFile("Test.pdf");
+
+		ofstream os("out.txt", ios::binary);
+		ar.write(os);
+		os.close();
+	}
+
+	Archive ar;
+
+	ifstream is("out.txt", ios::binary);
+	ar.decompress(is);
+	is.close();
 
 	MainWindow w;
 	w.show();
