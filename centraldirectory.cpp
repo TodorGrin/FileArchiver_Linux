@@ -18,13 +18,18 @@ void CentralDirectory::write(ostream &os) {
 }
 
 void CentralDirectory::read(istream &is)  {
-	int beginOffset = 0;
+    int beginOffset = 0, endOffset = 0;
 
 	is.seekg(-4, ios::end);
+    endOffset = is.tellg();
 	is.read((char*) &beginOffset, sizeof(beginOffset));
 	is.seekg(-beginOffset, ios::end);
 
-	files.resize(1);
+    files.clear();
 
-	files[0].read(is);
+    while (is.tellg() < endOffset) {
+        FileHeader fileHeader;
+        fileHeader.read(is);
+        files.push_back(move(fileHeader));
+    }
 }

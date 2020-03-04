@@ -18,6 +18,7 @@ void Archive::write(ostream &os) {
 	Huffman huffman;
 
 	for (int i = 0; i < files.size(); ++i) {
+        centralDirectory.files[i].offset = os.tellp();
 		huffman.compress(files[i], os);
 	}
 

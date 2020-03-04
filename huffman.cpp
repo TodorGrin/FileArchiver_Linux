@@ -71,7 +71,7 @@ void Huffman::compress(string inFile, ostream &os) {
 	Tree *t = buildTree(f);
 	string *codes = getCharCodes(t);
 
-	FILE *inF;
+    FILE *inF;
 	fopen_s(&inF, inFile.c_str(), "rb");
 
 	int begin = os.tellp();
@@ -83,20 +83,20 @@ void Huffman::compress(string inFile, ostream &os) {
 	for (int c = 0; c < 256; ++c)
 		os.write((char*) &f[c], sizeof(int));
 
-	while ((inC = fgetc(inF)) != EOF) {
-		++size;
+    while ((inC = fgetc(inF)) != EOF) {
+        ++size;
 
-		for (int i = 0; i < codes[inC].size(); ++i) {
-			outC = outC | ((codes[inC][i] - '0') << bytes);
-			++bytes;
+        for (int i = 0; i < codes[inC].size(); ++i) {
+            outC = outC | ((codes[inC][i] - '0') << bytes);
+            ++bytes;
 
-			if (bytes == 8) {
-				os.put(outC);
-				outC = 0;
-				bytes = 0;
-			}
-		}
-	}
+            if (bytes == 8) {
+                os.put(outC);
+                outC = 0;
+                bytes = 0;
+            }
+        }
+    }
 
 	if (bytes > 0)
 		os.put(outC);
