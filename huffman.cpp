@@ -9,11 +9,9 @@ Huffman::Huffman() {
 }
 
 int* Huffman::getCharFrequency(string fileName) {
-	FILE *file;
+    FILE *file = fopen(fileName.c_str(), "rb");
 	int *frequency = new int[256]();
 	int c;
-
-	fopen_s(&file, fileName.c_str(), "rb");
 
 	while ((c = fgetc(file)) != EOF)
 		++frequency[c];
@@ -71,8 +69,7 @@ void Huffman::compress(string inFile, ostream &os) {
 	Tree *t = buildTree(f);
 	string *codes = getCharCodes(t);
 
-    FILE *inF;
-	fopen_s(&inF, inFile.c_str(), "rb");
+    FILE *inF = fopen(inFile.c_str(), "rb");
 
 	int begin = os.tellp();
 	os.seekp(sizeof(int), ios::cur);
@@ -109,8 +106,7 @@ void Huffman::compress(string inFile, ostream &os) {
 }
 
 void Huffman::decompress(istream &is, string outFile) {
-	FILE *outF;
-	fopen_s(&outF, outFile.c_str(), "wb");
+    FILE *outF = fopen(outFile.c_str(), "wb");
 
 	int size, inC = 0, charsWritten = 0;
 	int charFrequency[256];

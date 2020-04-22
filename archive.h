@@ -11,6 +11,7 @@ class Archive {
 		CentralDirectory centralDirectory;
 
 		Archive();
+        Archive(string path);
 
 		void addFile(string path);
 

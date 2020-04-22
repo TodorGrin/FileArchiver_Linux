@@ -1,7 +1,14 @@
 #include "archive.h"
+#include <fstream>
 
 Archive::Archive() {
 
+}
+
+Archive::Archive(string path) {
+    ifstream is(path, ios::binary);
+
+    centralDirectory.read(is);
 }
 
 void Archive::addFile(string path) {
