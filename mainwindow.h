@@ -5,6 +5,7 @@
 #include <memory>
 #include <set>
 #include "archive.h"
+#include "folder.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -15,20 +16,21 @@ class MainWindow : public QMainWindow {
 
     private:
         Ui::MainWindow *ui;
-        set<string> folders, files;
+        shared_ptr<Folder> folder;
+        shared_ptr<Archive> archive;
 
-        bool startsWith(string str, string toStart);
+        void setTableText(int row, int column, string text);
 
     protected:
         void paintEvent(QPaintEvent *event) override;
 
 	public:
-        shared_ptr<Archive> archive;
-        string currentFolder = "";
-
 		MainWindow(QWidget *parent = nullptr);
 		~MainWindow();
-private slots:
+
+        void setArchive(shared_ptr<Archive> archive);
+
+    private slots:
         void on_fileList_cellDoubleClicked(int row, int column);
 };
 #endif // MAINWINDOW_H

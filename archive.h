@@ -7,7 +7,6 @@
 
 class Archive {
 	public:
-		vector<string> files;
 		CentralDirectory centralDirectory;
 
 		Archive();

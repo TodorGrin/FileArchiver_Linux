@@ -1,11 +1,27 @@
 #include "fileheader.h"
+#include <sys/stat.h>
 
 FileHeader::FileHeader() {
 
 }
 
+FileHeader::FileHeader(string name) {
+    this->name = name;
+}
+
+void FileHeader::readStatus() {
+    struct stat st;
+    stat(name.c_str(), &st);
+
+    size = st.st_size;
+    lastAccessTime = st.st_atime;
+}
+
 void FileHeader::write(ostream &os) {
 	os.write((char*) &offset, sizeof(offset));
+    os.write((char*) &size, sizeof(size));
+    os.write((char*) &compressedSize, sizeof(compressedSize));
+    os.write((char*) &lastAccessTime, sizeof(lastAccessTime));
 
     name = name + "_";
 	int nameSize = name.size();
@@ -15,6 +31,9 @@ void FileHeader::write(ostream &os) {
 
 void FileHeader::read(istream &is) {
 	is.read((char*) &offset, sizeof(offset));
+    is.read((char*) &size, sizeof(size));
+    is.read((char*) &compressedSize, sizeof(compressedSize));
+    is.read((char*) &lastAccessTime, sizeof(lastAccessTime));
 
 	int nameSize;
 	is.read((char*) &nameSize, sizeof(nameSize));

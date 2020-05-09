@@ -19,6 +19,7 @@ SOURCES += \
     archive.cpp \
     centraldirectory.cpp \
     fileheader.cpp \
+    folder.cpp \
     huffman.cpp \
     main.cpp \
     mainwindow.cpp
@@ -27,6 +28,7 @@ HEADERS += \
     archive.h \
     centraldirectory.h \
     fileheader.h \
+    folder.h \
     huffman.h \
     mainwindow.h
 

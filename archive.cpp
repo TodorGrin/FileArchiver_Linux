@@ -12,10 +12,8 @@ Archive::Archive(string path) {
 }
 
 void Archive::addFile(string path) {
-	files.push_back(path);
-
-	FileHeader fileHeader;
-	fileHeader.name = path;
+    FileHeader fileHeader(path);
+    fileHeader.readStatus();
 	fileHeader.offset = 0;
 
 	centralDirectory.files.push_back(move(fileHeader));
@@ -24,9 +22,13 @@ void Archive::addFile(string path) {
 void Archive::write(ostream &os) {
 	Huffman huffman;
 
-	for (int i = 0; i < files.size(); ++i) {
-        centralDirectory.files[i].offset = os.tellp();
-		huffman.compress(files[i], os);
+    for (FileHeader &fh : centralDirectory.files) {
+        fh.offset = os.tellp();
+
+        huffman.compress(fh.name, os);
+
+        fh.compressedSize = os.tellp();
+        fh.compressedSize -= fh.offset;
 	}
 
 	centralDirectory.write(os);

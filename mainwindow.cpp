@@ -3,79 +3,74 @@
 #include <QTableWidget>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
+    folder = make_shared<Folder>("");
+
 	ui->setupUi(this);
+    ui->fileList->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 }
 
 MainWindow::~MainWindow() {
 	delete ui;
 }
 
-bool MainWindow::startsWith(string str, string toStart) {
-    if (str.size() < toStart.size())
-        return false;
-
-    for (int i = 0; i < toStart.size(); ++i)
-        if (str[i] != toStart[i])
-            return false;
-
-    return true;
+void MainWindow::setTableText(int row, int column, string text) {
+    QTableWidgetItem *item = new QTableWidgetItem(QString::fromStdString(text));
+    item->setFlags(item->flags() & ~Qt::ItemIsEditable);
+    ui->fileList->setItem(row, column, item);
 }
 
 void MainWindow::paintEvent(QPaintEvent *event) {
     ui->fileList->setRowCount(1);
-    folders.clear();
-    files.clear();
+    this->setWindowTitle(QString::fromStdString(folder->getName() + " - Archiver"));
 
-    for (FileHeader fh : archive->centralDirectory.files) {
-        if (!startsWith(fh.name, currentFolder))
-            continue;
+    setTableText(0, 0, "...");
+    setTableText(0, 1, "");
 
-        string name = fh.name.substr(currentFolder.size(), string::npos);
-        auto firstSlashPos = name.find_first_of("/");
+    for (shared_ptr<Folder> &subfolder : folder->getSubfolders()) {
+        int row = ui->fileList->rowCount();
+        ui->fileList->insertRow(row);
 
-        if (firstSlashPos == string::npos) {
-            files.insert(name);
-        }
-        else {
-            folders.insert(name.substr(0, firstSlashPos));
-        }
+        setTableText(row, 0, subfolder->getName());
     }
 
-    QTableWidgetItem *it = new QTableWidgetItem("...");
-    it->setFlags(it->flags() & ~Qt::ItemIsEditable);
-    ui->fileList->setItem(0, 0, it);
+    for (FileHeader &file : folder->getFiles()) {
+        int row = ui->fileList->rowCount();
+        ui->fileList->insertRow(row);
 
-    for (string folderName : folders) {
-        QTableWidgetItem *item = new QTableWidgetItem(QString::fromStdString(folderName));
-        item->setFlags(item->flags() & ~Qt::ItemIsEditable);
-        ui->fileList->insertRow(ui->fileList->rowCount());
-        ui->fileList->setItem(ui->fileList->rowCount() - 1, 0, item);
-    }
+        setTableText(row, 0, file.name);
+        setTableText(row, 1, to_string(file.size));
+        setTableText(row, 2, to_string(file.compressedSize));
 
-    for (string fileName : files) {
-        QTableWidgetItem *item = new QTableWidgetItem(QString::fromStdString(fileName));
-        item->setFlags(item->flags() & ~Qt::ItemIsEditable);
-        ui->fileList->insertRow(ui->fileList->rowCount());
-        ui->fileList->setItem(ui->fileList->rowCount() - 1, 0, item);
+        char buffer[32];
+        tm *ptm = localtime(&file.lastAccessTime);
+        strftime(buffer, 32, "%Y-%m-%d %H:%M:%S", ptm);
+        setTableText(row, 3, string(buffer));
     }
 }
 
 void MainWindow::on_fileList_cellDoubleClicked(int row, int column) {
-    QTableWidgetItem *item = ui->fileList->item(row, column);
+    QTableWidgetItem *item = ui->fileList->item(row, 0);
     string name = item->text().toStdString();
 
     if (row == 0) {
-        if (currentFolder.find("/") == string::npos)
-            return;
+        if (folder->getParentFolder() != nullptr)
+            folder = folder->getParentFolder();
 
-        currentFolder = currentFolder.substr(0, currentFolder.size() - 2);
-        currentFolder = currentFolder.substr(0, currentFolder.find_last_of("/"));
-        if (currentFolder.size() > 0) currentFolder += "/";
         this->update();
+        return;
     }
 
-    if (folders.find(name) != folders.end()) {
-        currentFolder += name + "/";
+    auto it = find_if(folder->getSubfolders().begin(), folder->getSubfolders().end(), [&](const shared_ptr<Folder> &f){return f->getName() == name;});
+
+    if (it != folder->getSubfolders().end()) {
+        folder = *it;
         this->update();
     }
+}
+
+void MainWindow::setArchive(shared_ptr<Archive> archive) {
+    this->archive = archive;
+
+    for (FileHeader &fh : archive->centralDirectory.files)
+        folder->addFile(fh);
 }

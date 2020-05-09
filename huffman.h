@@ -19,7 +19,7 @@ class Huffman {
 	public:
 		Huffman();
 
-		void compress(string inFile, ostream &os);
+        void compress(string inFile, ostream &os);
 		void decompress(istream &is, string outFile);
 };
 
