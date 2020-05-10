@@ -71,6 +71,9 @@ void Huffman::compress(string inFile, ostream &os) {
 
     FILE *inF = fopen(inFile.c_str(), "rb");
 
+    if (!inF)
+        throw std::runtime_error("Failed to open " + inFile);
+
 	int begin = os.tellp();
 	os.seekp(sizeof(int), ios::cur);
 
@@ -107,6 +110,9 @@ void Huffman::compress(string inFile, ostream &os) {
 
 void Huffman::decompress(istream &is, string outFile) {
     FILE *outF = fopen(outFile.c_str(), "wb");
+
+    if (!outF)
+        throw std::runtime_error("Failed to create " + outFile);
 
 	int size, inC = 0, charsWritten = 0;
 	int charFrequency[256];

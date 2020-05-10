@@ -16,8 +16,11 @@ class Folder : public enable_shared_from_this<Folder> {
     public:
         Folder(string name);
         Folder(shared_ptr<Folder> parentFolder, string name);
+        ~Folder();
 
         void addFile(FileHeader fileHeader);
+        void clear();
+        void extract(istream &is, string extractPath);
 
         string getName() const;
         vector<shared_ptr<Folder>>& getSubfolders();

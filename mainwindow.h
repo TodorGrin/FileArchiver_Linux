@@ -16,8 +16,8 @@ class MainWindow : public QMainWindow {
 
     private:
         Ui::MainWindow *ui;
-        shared_ptr<Folder> folder;
         shared_ptr<Archive> archive;
+        shared_ptr<Folder> folder;
 
         void setTableText(int row, int column, string text);
 
@@ -32,5 +32,9 @@ class MainWindow : public QMainWindow {
 
     private slots:
         void on_fileList_cellDoubleClicked(int row, int column);
+        void openFile_onClicked();
+        void deleteFile_onClicked();
+        void extractArchive_onClicked();
+        void saveArchive_onClicked();
 };
 #endif // MAINWINDOW_H

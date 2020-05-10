@@ -2,13 +2,17 @@
 #include <fstream>
 
 Archive::Archive() {
-
+    parentFolder = make_shared<Folder>("");
 }
 
-Archive::Archive(string path) {
-    ifstream is(path, ios::binary);
+Archive::Archive(string path) : Archive() {
+    this->path = path;
 
+    ifstream is(path, ios::binary);
     centralDirectory.read(is);
+
+    for (FileHeader &fh : centralDirectory.files)
+        parentFolder->addFile(fh);
 }
 
 void Archive::addFile(string path) {
@@ -19,29 +23,36 @@ void Archive::addFile(string path) {
 	centralDirectory.files.push_back(move(fileHeader));
 }
 
-void Archive::write(ostream &os) {
-	Huffman huffman;
+void Archive::write(string path) {
+    ofstream os(path, ios::binary);
+
+    if (!os.is_open())
+        throw std::runtime_error("Failed to create " + path);
 
     for (FileHeader &fh : centralDirectory.files) {
         fh.offset = os.tellp();
 
-        huffman.compress(fh.name, os);
+        Huffman::compress(fh.name, os);
 
         fh.compressedSize = os.tellp();
         fh.compressedSize -= fh.offset;
 	}
 
 	centralDirectory.write(os);
+    os.close();
 }
 
-void Archive::decompress(istream &is) {
-	Huffman huffman;
+void Archive::decompress(string path) {
+    ifstream is(this->path, ios::binary);
 
-	centralDirectory.read(is);
+    if (!is.is_open())
+        throw std::runtime_error("Failed to open " + this->path);
 
-	for (int i = 0; i < centralDirectory.files.size(); ++i) {
-		FileHeader &fileHeader = centralDirectory.files[i];
-		is.seekg(fileHeader.offset, ios::beg);
-		huffman.decompress(is, fileHeader.name);
-	}
+    parentFolder->extract(is, path);
+
+    is.close();
+}
+
+shared_ptr<Folder> Archive::getParentFolder() {
+    return parentFolder;
 }

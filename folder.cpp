@@ -1,4 +1,6 @@
 #include "folder.h"
+#include "huffman.h"
+#include <sys/stat.h>
 #include <algorithm>
 
 Folder::Folder(string name) {
@@ -9,6 +11,20 @@ Folder::Folder(string name) {
 Folder::Folder(shared_ptr<Folder> parentFolder, string name) {
     this->parentFolder = parentFolder;
     this->name = name;
+}
+
+Folder::~Folder() {
+    cout << name << " deleted" << endl;
+}
+
+void Folder::clear() {
+    parentFolder.reset();
+
+    for (auto folder : subfolders)
+        folder->clear();
+
+    subfolders.clear();
+    files.clear();
 }
 
 void Folder::addFile(FileHeader fileHeader) {
@@ -43,6 +59,18 @@ void Folder::addFile(FileHeader fileHeader) {
 
 string Folder::getName() const {
     return name;
+}
+
+void Folder::extract(istream &is, string extractPath) {
+    mkdir(extractPath.c_str(), 0700);
+
+    for (FileHeader &fileHeader : files) {
+        is.seekg(fileHeader.offset, ios::beg);
+        Huffman::decompress(is, extractPath + "/" + fileHeader.name);
+    }
+
+    for (shared_ptr<Folder> &folder : subfolders)
+        folder->extract(is, extractPath + "/" + folder->getName());
 }
 
 vector<shared_ptr<Folder>>& Folder::getSubfolders() {

@@ -29,36 +29,7 @@ void addFiles(Archive &ar, string filePath) {
 int main(int argc, char *argv[]) {
 	QApplication a(argc, argv);
 
-    createFiles("1/Test");
-    createFiles("2/Test");
-    createFiles("Test");
-
-    QElapsedTimer timer;
-    timer.start();
-
-    {
-        Archive ar;
-
-        addFiles(ar, "1/Test");
-        addFiles(ar, "2/Test");
-        addFiles(ar, "Test");
-
-        ofstream os("out.taf", ios::binary);
-        ar.write(os);
-        os.close();
-    }
-
-    cout << timer.elapsed() << endl;
-    timer.restart();
-
     shared_ptr<Archive> ar = make_shared<Archive>("out.taf");
-
-    //ifstream is("out.taf", ios::binary);
-    //ar->decompress(is);
-    //is.close();
-
-    //cout << timer.elapsed() << endl;
-
 	MainWindow w;
     w.setArchive(ar);
     w.show();

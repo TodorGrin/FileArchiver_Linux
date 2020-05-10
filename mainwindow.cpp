@@ -1,16 +1,48 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include <QTableWidget>
+#include <QFileDialog>
+#include <QErrorMessage>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
-    folder = make_shared<Folder>("");
-
 	ui->setupUi(this);
     ui->fileList->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+
+    connect(ui->actionOpen, &QAction::triggered, this, &MainWindow::openFile_onClicked);
+    connect(ui->actionDelete, &QAction::triggered, this, &MainWindow::deleteFile_onClicked);
+    connect(ui->actionExtract, &QAction::triggered, this, &MainWindow::extractArchive_onClicked);
 }
 
 MainWindow::~MainWindow() {
 	delete ui;
+}
+
+void MainWindow::extractArchive_onClicked() {
+    QString dir = QFileDialog::getExistingDirectory(this, tr("Select where to extract"), "/home", QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+
+    try {
+        archive->decompress(dir.toStdString());
+    }
+    catch(std::exception &e) {
+        QErrorMessage err(this);
+        err.setWindowTitle("Error");
+        err.showMessage(e.what());
+        err.exec();
+    }
+}
+
+void MainWindow::openFile_onClicked() {
+    QString fileName = QFileDialog::getOpenFileName(this, "Open archive", "/home", "Archive files (*.taf);;All files (*.*)");
+    shared_ptr<Archive> archive = make_shared<Archive>(fileName.toStdString());
+    setArchive(archive);
+
+    this->update();
+}
+
+void MainWindow::deleteFile_onClicked() {
+
+
+    this->update();
 }
 
 void MainWindow::setTableText(int row, int column, string text) {
@@ -25,6 +57,8 @@ void MainWindow::paintEvent(QPaintEvent *event) {
 
     setTableText(0, 0, "...");
     setTableText(0, 1, "");
+    setTableText(0, 2, "");
+    setTableText(0, 3, "");
 
     for (shared_ptr<Folder> &subfolder : folder->getSubfolders()) {
         int row = ui->fileList->rowCount();
@@ -70,7 +104,5 @@ void MainWindow::on_fileList_cellDoubleClicked(int row, int column) {
 
 void MainWindow::setArchive(shared_ptr<Archive> archive) {
     this->archive = archive;
-
-    for (FileHeader &fh : archive->centralDirectory.files)
-        folder->addFile(fh);
+    this->folder = archive->getParentFolder();
 }
