@@ -10,6 +10,10 @@ Huffman::Huffman() {
 
 int* Huffman::getCharFrequency(string fileName) {
     FILE *file = fopen(fileName.c_str(), "rb");
+
+    if (!file)
+        throw std::runtime_error("Failed to open \"" + fileName + "\"");
+
 	int *frequency = new int[256]();
 	int c;
 
@@ -72,7 +76,7 @@ void Huffman::compress(string inFile, ostream &os) {
     FILE *inF = fopen(inFile.c_str(), "rb");
 
     if (!inF)
-        throw std::runtime_error("Failed to open " + inFile);
+        throw std::runtime_error("Failed to open \"" + inFile + "\"");
 
 	int begin = os.tellp();
 	os.seekp(sizeof(int), ios::cur);
@@ -112,7 +116,7 @@ void Huffman::decompress(istream &is, string outFile) {
     FILE *outF = fopen(outFile.c_str(), "wb");
 
     if (!outF)
-        throw std::runtime_error("Failed to create " + outFile);
+        throw std::runtime_error("Failed to create \"" + outFile + "\"");
 
 	int size, inC = 0, charsWritten = 0;
 	int charFrequency[256];

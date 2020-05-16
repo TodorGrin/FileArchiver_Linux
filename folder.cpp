@@ -28,6 +28,9 @@ void Folder::clear() {
 }
 
 void Folder::addFile(shared_ptr<File> file, string remainingPath) {
+    if (remainingPath[0] == '/')
+        remainingPath = remainingPath.substr(1);
+
     auto firstSlashPos = remainingPath.find_first_of("/");
 
     if (firstSlashPos == string::npos) {
@@ -77,10 +80,6 @@ void Folder::addFile(shared_ptr<File> file) {
     addFile(file, file->getHeader().name);
 }
 
-string Folder::getName() const {
-    return name;
-}
-
 void Folder::extract(istream &is, string extractPath) {
     mkdir(extractPath.c_str(), 0700);
 
@@ -91,6 +90,17 @@ void Folder::extract(istream &is, string extractPath) {
 
     for (shared_ptr<Folder> &folder : subfolders)
         folder->extract(is, extractPath + "/" + folder->getName());
+}
+
+string Folder::getName() const {
+    return name;
+}
+
+string Folder::getPath() const {
+    if (parentFolder == nullptr)
+        return "";
+    else
+        return parentFolder->getPath() + "/" + name;
 }
 
 vector<shared_ptr<Folder>>& Folder::getSubfolders() {

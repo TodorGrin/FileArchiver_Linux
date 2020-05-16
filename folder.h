@@ -30,6 +30,7 @@ class Folder : public enable_shared_from_this<Folder> {
         void clear();
         void extract(istream &is, string extractPath);
 
+        string getPath() const;
         string getName() const;
         vector<shared_ptr<Folder>>& getSubfolders();
         vector<shared_ptr<File>>& getFiles();

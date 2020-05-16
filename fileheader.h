@@ -18,7 +18,7 @@ class FileHeader {
         FileHeader();
         FileHeader(std::string name);
 
-        void readStatus();
+        void readStatus(string filePathOnDisk);
 
         void write(std::ostream &os);
         void read(std::istream &is);

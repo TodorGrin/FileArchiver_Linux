@@ -9,9 +9,9 @@ FileHeader::FileHeader(string name) {
     this->name = name;
 }
 
-void FileHeader::readStatus() {
+void FileHeader::readStatus(string filePathOnDisk) {
     struct stat st;
-    stat(name.c_str(), &st);
+    stat(filePathOnDisk.c_str(), &st);
 
     size = st.st_size;
     lastAccessTime = st.st_atime;

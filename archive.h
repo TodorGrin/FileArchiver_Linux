@@ -13,6 +13,7 @@ class Archive {
         string path;
 
         void updateHierarchy();
+        void compressFile(shared_ptr<File> file, string filePathOnDisk, ostream &os);
 
 	public:
 
@@ -20,7 +21,7 @@ class Archive {
         Archive(string path);
         ~Archive();
 
-        void addFile(string path);
+        void addFile(shared_ptr<Folder> folder, string filePath);
         void deleteFile(shared_ptr<File> file);
 
         void deleteFolder(shared_ptr<Folder> folder);

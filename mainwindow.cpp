@@ -11,10 +11,18 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     connect(ui->actionOpen, &QAction::triggered, this, &MainWindow::openFile_onClicked);
     connect(ui->actionDelete, &QAction::triggered, this, &MainWindow::deleteFile_onClicked);
     connect(ui->actionExtract, &QAction::triggered, this, &MainWindow::extractArchive_onClicked);
+    connect(ui->actionAddFiles, &QAction::triggered, this, &MainWindow::addFile_onClicked);
 }
 
 MainWindow::~MainWindow() {
 	delete ui;
+}
+
+void MainWindow::showError(string title, string text) {
+    QErrorMessage err(this);
+    err.setWindowTitle(QString::fromStdString(title));
+    err.showMessage(QString::fromStdString(text));
+    err.exec();
 }
 
 void MainWindow::extractArchive_onClicked() {
@@ -37,6 +45,20 @@ void MainWindow::openFile_onClicked() {
     setArchive(archive);
 
     this->update();
+}
+
+void MainWindow::addFile_onClicked() {
+    try {
+        QStringList fileNames = QFileDialog::getOpenFileNames(this, "Add file", "/home", "All files (*.*)");
+
+        for (QString name : fileNames)
+            archive->addFile(folder, name.toStdString());
+
+        this->update();
+    }
+    catch (runtime_error e) {
+        showError("Error while adding file", e.what());
+    }
 }
 
 void MainWindow::deleteFile_onClicked() {

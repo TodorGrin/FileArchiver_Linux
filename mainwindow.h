@@ -20,6 +20,7 @@ class MainWindow : public QMainWindow {
         shared_ptr<Folder> folder;
 
         void setTableText(int row, int column, string text);
+        void showError(string title, string text);
 
     protected:
         void paintEvent(QPaintEvent *event) override;
@@ -34,6 +35,7 @@ class MainWindow : public QMainWindow {
         void on_fileList_cellDoubleClicked(int row, int column);
         void openFile_onClicked();
         void deleteFile_onClicked();
+        void addFile_onClicked();
         void extractArchive_onClicked();
 };
 #endif // MAINWINDOW_H

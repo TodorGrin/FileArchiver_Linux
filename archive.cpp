@@ -28,13 +28,33 @@ void Archive::updateHierarchy() {
         parentFolder->addFile(f);
 }
 
-void Archive::addFile(string path) {
-    FileHeader fileHeader(path);
-    fileHeader.readStatus();
-	fileHeader.offset = 0;
+void Archive::addFile(shared_ptr<Folder> folder, string filePath) {
+    auto lastSlashPos = filePath.find_last_of("/");
+    string pathInArchive = folder->getPath() + "/";
 
-    centralDirectory.files.push_back(make_shared<File>(nullptr, fileHeader));
-    //TODO
+    if (lastSlashPos == string::npos)
+        pathInArchive += filePath;
+    else
+        pathInArchive += filePath.substr(lastSlashPos + 1);
+
+    FileHeader fileHeader(pathInArchive);
+    fileHeader.readStatus(filePath);
+    fileHeader.offset = centralDirectory.offset;
+
+    fstream os(path, ios::out | ios::in | ios::binary);
+    if (!os.is_open())
+        throw runtime_error("Can't open file" + path);
+
+    shared_ptr<File> file = make_shared<File>(nullptr, fileHeader);
+
+    os.seekp(centralDirectory.offset);
+    compressFile(file, filePath, os);
+
+    centralDirectory.files.push_back(file);
+    parentFolder->addFile(file);
+
+    centralDirectory.write(os);
+    os.close();
 }
 
 void Archive::write(string path) {
@@ -44,16 +64,19 @@ void Archive::write(string path) {
         throw std::runtime_error("Failed to create " + path);
 
     for (auto &f : centralDirectory.files) {
-        f->getHeader().offset = os.tellp();
-
-        Huffman::compress(f->getHeader().name, os);
-
-        f->getHeader().compressedSize = os.tellp();
-        f->getHeader().compressedSize -= f->getHeader().offset;
+        compressFile(f, f->getHeader().name, os);
 	}
 
 	centralDirectory.write(os);
     os.close();
+}
+
+void Archive::compressFile(shared_ptr<File> file, string filePathOnDisk, ostream &os) {
+    file->getHeader().offset = os.tellp();
+
+    Huffman::compress(filePathOnDisk, os);
+
+    file->getHeader().compressedSize = (int) os.tellp() - file->getHeader().offset;
 }
 
 void Archive::decompress(string path) {
