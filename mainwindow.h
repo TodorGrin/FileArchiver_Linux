@@ -35,6 +35,5 @@ class MainWindow : public QMainWindow {
         void openFile_onClicked();
         void deleteFile_onClicked();
         void extractArchive_onClicked();
-        void saveArchive_onClicked();
 };
 #endif // MAINWINDOW_H

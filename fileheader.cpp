@@ -42,3 +42,7 @@ void FileHeader::read(istream &is) {
 		is.get(name[i]);
 	}
 }
+
+bool FileHeader::operator==(FileHeader &file) {
+    return (name == file.name);
+}

@@ -12,12 +12,18 @@ class Archive {
         shared_ptr<Folder> parentFolder;
         string path;
 
+        void updateHierarchy();
+
 	public:
 
 		Archive();
         Archive(string path);
+        ~Archive();
 
-		void addFile(string path);
+        void addFile(string path);
+        void deleteFile(shared_ptr<File> file);
+
+        void deleteFolder(shared_ptr<Folder> folder);
 
         void write(string path);
         void decompress(string path);

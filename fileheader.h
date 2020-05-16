@@ -12,16 +12,18 @@ class FileHeader {
 		int offset;
         off_t size;
         off_t compressedSize;
-		string name;
+        string name;
         time_t lastAccessTime;
 
         FileHeader();
-        FileHeader(string name);
+        FileHeader(std::string name);
 
         void readStatus();
 
-		void write(ostream &os);
-		void read(istream &is);
+        void write(std::ostream &os);
+        void read(std::istream &is);
+
+        bool operator==(FileHeader &file);
 };
 
 #endif // FILEHEADER_H

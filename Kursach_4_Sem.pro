@@ -18,6 +18,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
     archive.cpp \
     centraldirectory.cpp \
+    file.cpp \
     fileheader.cpp \
     folder.cpp \
     huffman.cpp \
@@ -27,6 +28,7 @@ SOURCES += \
 HEADERS += \
     archive.h \
     centraldirectory.h \
+    file.h \
     fileheader.h \
     folder.h \
     huffman.h \

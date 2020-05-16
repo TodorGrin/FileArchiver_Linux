@@ -27,34 +27,54 @@ void Folder::clear() {
     files.clear();
 }
 
-void Folder::addFile(FileHeader fileHeader) {
-    auto firstSlashPos = fileHeader.name.find_first_of("/");
+void Folder::addFile(shared_ptr<File> file, string remainingPath) {
+    auto firstSlashPos = remainingPath.find_first_of("/");
 
     if (firstSlashPos == string::npos) {
-        this->files.push_back(fileHeader);
+        file->setParentFolder(shared_from_this());
+        this->files.push_back(file);
     }
     else {
-        string subfolderName = fileHeader.name.substr(0, firstSlashPos);
+        string subfolderName = remainingPath.substr(0, firstSlashPos);
 
         auto it = find_if(subfolders.begin(), subfolders.end(), [&](const shared_ptr<Folder> &folder) {return folder->getName() == subfolderName;});
 
         if (it == subfolders.end()) {
             shared_ptr<Folder> folder = make_shared<Folder>(shared_from_this(), subfolderName);
 
-            FileHeader fh(fileHeader);
-            fh.name = fh.name.substr(firstSlashPos + 1);
-
-            folder->addFile(fh);
-
+            folder->addFile(file, remainingPath.substr(firstSlashPos + 1));
             subfolders.push_back(folder);
         }
         else {
-            FileHeader fh(fileHeader);
-            fh.name = fh.name.substr(firstSlashPos + 1);
-
-            (*it)->addFile(fh);
+            (*it)->addFile(file, remainingPath.substr(firstSlashPos + 1));
         }
     }
+}
+
+void Folder::deleteFile(shared_ptr<File> file, string remainingPath) {
+    auto firstSlashPos = remainingPath.find_first_of("/");
+
+    if (firstSlashPos == string::npos) {
+        auto it = find_if(files.begin(), files.end(), [&](const shared_ptr<File> &f){return f == file;});
+        files.erase(it);
+    }
+    else {
+        string subfolderName = remainingPath.substr(0, firstSlashPos);
+
+        auto it = find_if(subfolders.begin(), subfolders.end(), [&](const shared_ptr<Folder> &folder) {return folder->getName() == subfolderName;});
+
+        if (it != subfolders.end()) {
+            (*it)->deleteFile(file, remainingPath.substr(firstSlashPos + 1));
+        }
+    }
+}
+
+void Folder::deleteFile(shared_ptr<File> file) {
+    deleteFile(file, file->getHeader().name);
+}
+
+void Folder::addFile(shared_ptr<File> file) {
+    addFile(file, file->getHeader().name);
 }
 
 string Folder::getName() const {
@@ -64,9 +84,9 @@ string Folder::getName() const {
 void Folder::extract(istream &is, string extractPath) {
     mkdir(extractPath.c_str(), 0700);
 
-    for (FileHeader &fileHeader : files) {
-        is.seekg(fileHeader.offset, ios::beg);
-        Huffman::decompress(is, extractPath + "/" + fileHeader.name);
+    for (shared_ptr<File> file : files) {
+        is.seekg(file->getHeader().offset, ios::beg);
+        Huffman::decompress(is, extractPath + "/" + file->getName());
     }
 
     for (shared_ptr<Folder> &folder : subfolders)
@@ -77,7 +97,7 @@ vector<shared_ptr<Folder>>& Folder::getSubfolders() {
     return subfolders;
 }
 
-vector<FileHeader>& Folder::getFiles() {
+vector<shared_ptr<File>>& Folder::getFiles() {
     return files;
 }
 

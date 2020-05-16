@@ -40,7 +40,26 @@ void MainWindow::openFile_onClicked() {
 }
 
 void MainWindow::deleteFile_onClicked() {
+    QModelIndexList selectedRows = ui->fileList->selectionModel()->selectedRows();
 
+    for (auto &index : selectedRows) {
+        string name = ui->fileList->item(index.row(), 0)->text().toStdString();
+
+        auto files = folder->getFiles();
+        auto it = find_if(files.begin(), files.end(), [&](shared_ptr<File> &file){return file->getName() == name;});
+
+        if (it != files.end()) {
+            archive->deleteFile(*it);
+        }
+        else {
+            auto folders = folder->getSubfolders();
+            auto it = find_if(folders.begin(), folders.end(), [&](shared_ptr<Folder> &folder){return folder->getName() == name;});
+
+            if (it != folders.end()) {
+                archive->deleteFolder(*it);
+            }
+        }
+    }
 
     this->update();
 }
@@ -67,16 +86,16 @@ void MainWindow::paintEvent(QPaintEvent *event) {
         setTableText(row, 0, subfolder->getName());
     }
 
-    for (FileHeader &file : folder->getFiles()) {
+    for (shared_ptr<File> file : folder->getFiles()) {
         int row = ui->fileList->rowCount();
         ui->fileList->insertRow(row);
 
-        setTableText(row, 0, file.name);
-        setTableText(row, 1, to_string(file.size));
-        setTableText(row, 2, to_string(file.compressedSize));
+        setTableText(row, 0, file->getName());
+        setTableText(row, 1, to_string(file->getHeader().size));
+        setTableText(row, 2, to_string(file->getHeader().compressedSize));
 
         char buffer[32];
-        tm *ptm = localtime(&file.lastAccessTime);
+        tm *ptm = localtime(&file->getHeader().compressedSize);
         strftime(buffer, 32, "%Y-%m-%d %H:%M:%S", ptm);
         setTableText(row, 3, string(buffer));
     }
