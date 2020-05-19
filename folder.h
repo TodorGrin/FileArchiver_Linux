@@ -18,6 +18,7 @@ class Folder : public enable_shared_from_this<Folder> {
 
         void addFile(shared_ptr<File> file, string remainingPath);
         void deleteFile(shared_ptr<File> file, string remainingPath);
+        void updateFileNames();
 
     public:
         Folder(string name);
@@ -29,6 +30,8 @@ class Folder : public enable_shared_from_this<Folder> {
 
         void clear();
         void extract(istream &is, string extractPath);
+
+        void setName(string newName);
 
         string getPath() const;
         string getName() const;

@@ -16,6 +16,10 @@ class File : public enable_shared_from_this<File>{
     public:
         explicit File(shared_ptr<Folder> parentFolder, FileHeader header);
 
+        void extract(istream &is, string extractPath);
+
+        void setName(string name);
+
         string& getName();
         shared_ptr<Folder> getParentFolder();
         FileHeader& getHeader();

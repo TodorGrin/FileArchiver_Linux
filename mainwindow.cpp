@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 #include <QTableWidget>
 #include <QFileDialog>
+#include <QInputDialog>
 #include <QErrorMessage>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
@@ -12,6 +13,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     connect(ui->actionDelete, &QAction::triggered, this, &MainWindow::deleteFile_onClicked);
     connect(ui->actionExtract, &QAction::triggered, this, &MainWindow::extractArchive_onClicked);
     connect(ui->actionAddFiles, &QAction::triggered, this, &MainWindow::addFile_onClicked);
+    connect(ui->actionRename, &QAction::triggered, this, &MainWindow::renameFile_onClicked);
+    connect(ui->actionExtractFile, &QAction::triggered, this, &MainWindow::extractFiles_onClicked);
 }
 
 MainWindow::~MainWindow() {
@@ -25,17 +28,60 @@ void MainWindow::showError(string title, string text) {
     err.exec();
 }
 
+vector<shared_ptr<File>> MainWindow::getSelectedFiles() {
+    QModelIndexList selectedRows = ui->fileList->selectionModel()->selectedRows();
+    vector<shared_ptr<File>> selectedFiles;
+
+    for (auto &index : selectedRows) {
+        string name = ui->fileList->item(index.row(), 0)->text().toStdString();
+
+        auto files = folder->getFiles();
+        auto it = find_if(files.begin(), files.end(), [&](shared_ptr<File> &file){return file->getName() == name;});
+
+        if (it != files.end())
+            selectedFiles.push_back(*it);
+    }
+
+    return selectedFiles;
+}
+
+vector<shared_ptr<Folder>> MainWindow::getSelectedFolders() {
+    QModelIndexList selectedRows = ui->fileList->selectionModel()->selectedRows();
+    vector<shared_ptr<Folder>> selectedFolders;
+
+    for (auto &index : selectedRows) {
+        string name = ui->fileList->item(index.row(), 0)->text().toStdString();
+
+        auto folders = folder->getSubfolders();
+        auto it = find_if(folders.begin(), folders.end(), [&](shared_ptr<Folder> &folder){return folder->getName() == name;});
+
+        if (it != folders.end())
+            selectedFolders.push_back(*it);
+    }
+
+    return selectedFolders;
+}
+
 void MainWindow::extractArchive_onClicked() {
     QString dir = QFileDialog::getExistingDirectory(this, tr("Select where to extract"), "/home", QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
 
     try {
-        archive->decompress(dir.toStdString());
+        archive->extract(dir.toStdString());
     }
-    catch(std::exception &e) {
-        QErrorMessage err(this);
-        err.setWindowTitle("Error");
-        err.showMessage(e.what());
-        err.exec();
+    catch(exception &e) {
+        showError("Error while extracting archive", e.what());
+    }
+}
+
+void MainWindow::extractFiles_onClicked() {
+    QString dir = QFileDialog::getExistingDirectory(this, tr("Select where to extract"), "/home", QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+
+    try {
+        archive->extractFiles(getSelectedFiles(), dir.toStdString());
+        archive->extractFolders(getSelectedFolders(), dir.toStdString());
+    }
+    catch(exception &e) {
+        showError("Error while extracting archive", e.what());
     }
 }
 
@@ -56,34 +102,55 @@ void MainWindow::addFile_onClicked() {
 
         this->update();
     }
-    catch (runtime_error e) {
+    catch (exception &e) {
         showError("Error while adding file", e.what());
     }
 }
 
 void MainWindow::deleteFile_onClicked() {
-    QModelIndexList selectedRows = ui->fileList->selectionModel()->selectedRows();
+    try {
+        for (auto &file : getSelectedFiles())
+            archive->deleteFile(file);
 
-    for (auto &index : selectedRows) {
-        string name = ui->fileList->item(index.row(), 0)->text().toStdString();
+        for (auto &folder : getSelectedFolders())
+            archive->deleteFolder(folder);
 
-        auto files = folder->getFiles();
-        auto it = find_if(files.begin(), files.end(), [&](shared_ptr<File> &file){return file->getName() == name;});
-
-        if (it != files.end()) {
-            archive->deleteFile(*it);
-        }
-        else {
-            auto folders = folder->getSubfolders();
-            auto it = find_if(folders.begin(), folders.end(), [&](shared_ptr<Folder> &folder){return folder->getName() == name;});
-
-            if (it != folders.end()) {
-                archive->deleteFolder(*it);
-            }
-        }
+        ui->fileList->selectionModel()->clearSelection();
+        this->update();
     }
+    catch (exception &e) {
+        showError("Error while deleting file", e.what());
+    }
+}
 
-    this->update();
+void MainWindow::renameFile_onClicked() {
+    auto selectedFiles = getSelectedFiles();
+    auto selectedFolders = getSelectedFolders();
+
+    if (selectedFiles.size() + selectedFolders.size() > 1)
+        return;
+
+    try {
+        if (selectedFiles.size() > 0) {
+            bool ok = false;
+            QString newName = QInputDialog::getText(this, "Rename", "New file name", QLineEdit::Normal, QString::fromStdString(selectedFiles.front()->getName()), &ok);
+
+            if (ok && !newName.isEmpty())
+                archive->renameFile(selectedFiles.front(), newName.toStdString());
+        }
+        else if (selectedFolders.size() > 0) {
+            bool ok = false;
+            QString newName = QInputDialog::getText(this, "Rename", "New folder name", QLineEdit::Normal, QString::fromStdString(selectedFolders.front()->getName()), &ok);
+
+            if (ok && !newName.isEmpty())
+                archive->renameFolder(selectedFolders.front(), newName.toStdString());
+        }
+
+        this->update();
+    }
+    catch (runtime_error &e) {
+        showError("Error while renaming file", e.what());
+    }
 }
 
 void MainWindow::setTableText(int row, int column, string text) {
@@ -93,7 +160,7 @@ void MainWindow::setTableText(int row, int column, string text) {
 }
 
 void MainWindow::paintEvent(QPaintEvent *event) {
-    ui->fileList->setRowCount(1);
+    ui->fileList->setRowCount(1 + folder->getSubfolders().size() + folder->getFiles().size());
     this->setWindowTitle(QString::fromStdString(folder->getName() + " - Archiver"));
 
     setTableText(0, 0, "...");
@@ -101,17 +168,16 @@ void MainWindow::paintEvent(QPaintEvent *event) {
     setTableText(0, 2, "");
     setTableText(0, 3, "");
 
+    int row = 1;
     for (shared_ptr<Folder> &subfolder : folder->getSubfolders()) {
-        int row = ui->fileList->rowCount();
-        ui->fileList->insertRow(row);
-
         setTableText(row, 0, subfolder->getName());
+        setTableText(row, 1, "");
+        setTableText(row, 2, "");
+        setTableText(row, 3, "");
+        row++;
     }
 
     for (shared_ptr<File> file : folder->getFiles()) {
-        int row = ui->fileList->rowCount();
-        ui->fileList->insertRow(row);
-
         setTableText(row, 0, file->getName());
         setTableText(row, 1, to_string(file->getHeader().size));
         setTableText(row, 2, to_string(file->getHeader().compressedSize));
@@ -120,6 +186,7 @@ void MainWindow::paintEvent(QPaintEvent *event) {
         tm *ptm = localtime(&file->getHeader().compressedSize);
         strftime(buffer, 32, "%Y-%m-%d %H:%M:%S", ptm);
         setTableText(row, 3, string(buffer));
+        row++;
     }
 }
 

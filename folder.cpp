@@ -2,6 +2,7 @@
 #include "huffman.h"
 #include <sys/stat.h>
 #include <algorithm>
+#include <regex>
 
 Folder::Folder(string name) {
     this->parentFolder = nullptr;
@@ -25,6 +26,26 @@ void Folder::clear() {
 
     subfolders.clear();
     files.clear();
+}
+
+void Folder::updateFileNames() {
+    string path = getPath();
+
+    for (auto file : files)
+        file->getHeader().name = path + "/" + file->getName();
+
+    for (auto folder : subfolders)
+        folder->updateFileNames();
+}
+
+void Folder::setName(string newName) {
+    regex e("[\\/<>\\|:&]");
+
+    if (regex_search(name, e))
+        throw runtime_error("Folder name can't contain symbols /<>|:&");
+
+    this->name = newName;
+    updateFileNames();
 }
 
 void Folder::addFile(shared_ptr<File> file, string remainingPath) {
@@ -55,6 +76,9 @@ void Folder::addFile(shared_ptr<File> file, string remainingPath) {
 }
 
 void Folder::deleteFile(shared_ptr<File> file, string remainingPath) {
+    if (remainingPath[0] == '/')
+        remainingPath = remainingPath.substr(1);
+
     auto firstSlashPos = remainingPath.find_first_of("/");
 
     if (firstSlashPos == string::npos) {
@@ -83,10 +107,8 @@ void Folder::addFile(shared_ptr<File> file) {
 void Folder::extract(istream &is, string extractPath) {
     mkdir(extractPath.c_str(), 0700);
 
-    for (shared_ptr<File> file : files) {
-        is.seekg(file->getHeader().offset, ios::beg);
-        Huffman::decompress(is, extractPath + "/" + file->getName());
-    }
+    for (shared_ptr<File> file : files)
+        file->extract(is, extractPath);
 
     for (shared_ptr<Folder> &folder : subfolders)
         folder->extract(is, extractPath + "/" + folder->getName());

@@ -21,6 +21,8 @@ class MainWindow : public QMainWindow {
 
         void setTableText(int row, int column, string text);
         void showError(string title, string text);
+        vector<shared_ptr<File>> getSelectedFiles();
+        vector<shared_ptr<Folder>> getSelectedFolders();
 
     protected:
         void paintEvent(QPaintEvent *event) override;
@@ -36,6 +38,8 @@ class MainWindow : public QMainWindow {
         void openFile_onClicked();
         void deleteFile_onClicked();
         void addFile_onClicked();
+        void renameFile_onClicked();
+        void extractFiles_onClicked();
         void extractArchive_onClicked();
 };
 #endif // MAINWINDOW_H

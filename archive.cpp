@@ -1,8 +1,8 @@
 #include "archive.h"
 #include <fstream>
-#include <QErrorMessage>
 #include <stdio.h>
 #include <unistd.h>
+#include <algorithm>
 
 Archive::Archive() {
     parentFolder = make_shared<Folder>("");
@@ -28,6 +28,12 @@ void Archive::updateHierarchy() {
         parentFolder->addFile(f);
 }
 
+void Archive::truncateArchive(int size) {
+    FILE *f = fopen(this->path.c_str(), "a");
+    ftruncate(fileno(f), size);
+    fclose(f);
+}
+
 void Archive::addFile(shared_ptr<Folder> folder, string filePath) {
     auto lastSlashPos = filePath.find_last_of("/");
     string pathInArchive = folder->getPath() + "/";
@@ -43,7 +49,7 @@ void Archive::addFile(shared_ptr<Folder> folder, string filePath) {
 
     fstream os(path, ios::out | ios::in | ios::binary);
     if (!os.is_open())
-        throw runtime_error("Can't open file" + path);
+        throw runtime_error("Can't open file \"" + path + "\"");
 
     shared_ptr<File> file = make_shared<File>(nullptr, fileHeader);
 
@@ -61,7 +67,7 @@ void Archive::write(string path) {
     ofstream os(path, ios::binary);
 
     if (!os.is_open())
-        throw std::runtime_error("Failed to create " + path);
+        throw std::runtime_error("Failed to create \"" + path + "\"");
 
     for (auto &f : centralDirectory.files) {
         compressFile(f, f->getHeader().name, os);
@@ -79,13 +85,37 @@ void Archive::compressFile(shared_ptr<File> file, string filePathOnDisk, ostream
     file->getHeader().compressedSize = (int) os.tellp() - file->getHeader().offset;
 }
 
-void Archive::decompress(string path) {
+void Archive::extract(string path) {
     ifstream is(this->path, ios::binary);
 
     if (!is.is_open())
         throw std::runtime_error("Failed to open " + this->path);
 
     parentFolder->extract(is, path);
+
+    is.close();
+}
+
+void Archive::extractFiles(vector<shared_ptr<File>> files, string path) {
+    ifstream is(this->path, ios::binary);
+
+    if (!is.is_open())
+        throw std::runtime_error("Failed to open " + this->path);
+
+    for (auto file : files)
+        file->extract(is, path);
+
+    is.close();
+}
+
+void Archive::extractFolders(vector<shared_ptr<Folder> > folders, string path) {
+    ifstream is(this->path, ios::binary);
+
+    if (!is.is_open())
+        throw std::runtime_error("Failed to open " + this->path);
+
+    for (auto folder : folders)
+        folder->extract(is, path + "/" + folder->getName());
 
     is.close();
 }
@@ -99,15 +129,11 @@ void Archive::deleteFile(shared_ptr<File> file) {
     }
 
     fstream fs(this->path, ios::in | ios::out | ios::binary);
-
-    if (!fs.is_open()) {
-        QErrorMessage err;
-        err.setWindowTitle("Error");
-        err.showMessage(QString::fromStdString("Can't open " + this->path));
-        err.exec();
-    }
+    if (!fs.is_open())
+        throw runtime_error("Can't open \"" + this->path + "\"");
 
     int writePos = file->getHeader().offset;
+    fs.seekp(writePos);
 
     while (shiftStart < shiftEnd) {
         char c;
@@ -128,9 +154,22 @@ void Archive::deleteFile(shared_ptr<File> file) {
     int fileSize = fs.tellp();
     fs.close();
 
-    FILE *f = fopen(this->path.c_str(), "a");
-    ftruncate(fileno(f), fileSize);
-    fclose(f);
+    truncateArchive(fileSize);
+}
+
+void Archive::renameFile(shared_ptr<File> file, string newName) {
+    file->setName(newName);
+
+    fstream fs(this->path, ios::in | ios::out | ios::binary);
+    if (!fs.is_open())
+        throw runtime_error("Can't open \"" + this->path + "\"");
+
+    fs.seekp(centralDirectory.offset);
+    centralDirectory.write(fs);
+    int fileSize = fs.tellp();
+    fs.close();
+
+    truncateArchive(fileSize);
 }
 
 void Archive::deleteFolder(shared_ptr<Folder> folder) {
@@ -149,6 +188,22 @@ void Archive::deleteFolder(shared_ptr<Folder> folder) {
     parentFolder->getSubfolders().erase(find(parentFolder->getSubfolders().begin(), parentFolder->getSubfolders().end(), folder));
     folder->clear();
 }
+
+void Archive::renameFolder(shared_ptr<Folder> folder, string newName) {
+    folder->setName(newName);
+
+    fstream fs(this->path, ios::in | ios::out | ios::binary);
+    if (!fs.is_open())
+        throw runtime_error("Can't open \"" + this->path + "\"");
+
+    fs.seekp(centralDirectory.offset);
+    centralDirectory.write(fs);
+    int fileSize = fs.tellp();
+    fs.close();
+
+    truncateArchive(fileSize);
+}
+
 
 shared_ptr<Folder> Archive::getParentFolder() {
     return parentFolder;
