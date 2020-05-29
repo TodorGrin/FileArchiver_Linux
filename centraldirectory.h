@@ -9,6 +9,8 @@ using namespace std;
 
 class CentralDirectory {
     private:
+        const long long MAGIC_NUMBER = 4452863974852415491;
+
         vector<shared_ptr<File>> files;
         int offset;
 

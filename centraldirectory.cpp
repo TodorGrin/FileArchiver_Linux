@@ -8,6 +8,8 @@ void CentralDirectory::write(ostream &os) {
 	int beginOffset = os.tellp(), endOffset;
     offset = beginOffset;
 
+    os.write((char*) &MAGIC_NUMBER, sizeof(MAGIC_NUMBER));
+
 	for (int i = 0; i < files.size(); ++i) {
         files[i]->getHeader().write(os);
 	}
@@ -24,11 +26,20 @@ void CentralDirectory::read(istream &is)  {
 	is.seekg(-4, ios::end);
     endOffset = is.tellg();
     is.read((char*) &startOffset, sizeof(startOffset));
+
+    if (startOffset < 0 || startOffset > endOffset)
+        throw runtime_error("This is not valid archive file");
+
     is.seekg(-startOffset, ios::end);
     offset = is.tellg();
 
-    files.clear();
+    long long magicNumber;
+    is.read((char*) &magicNumber, sizeof(magicNumber));
 
+    if (magicNumber != MAGIC_NUMBER)
+        throw runtime_error("This is not valid archive file");
+
+    files.clear();
     while (is.tellg() < endOffset) {
         FileHeader fileHeader;
         fileHeader.read(is);

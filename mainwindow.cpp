@@ -108,7 +108,7 @@ void MainWindow::createArchive_onClicked() {
         string name = fileName.toStdString();
         auto dotPos = name.find_last_of(".");
 
-        if (dotPos == string::npos || name.substr(dotPos + 1) != ".taf")
+        if (dotPos == string::npos || name.substr(dotPos + 1) != "taf")
             name += ".taf";
 
         shared_ptr<Archive> archive = Archive::create(name);
