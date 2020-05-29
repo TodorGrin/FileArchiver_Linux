@@ -9,12 +9,16 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 	ui->setupUi(this);
     ui->fileList->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
-    connect(ui->actionOpen, &QAction::triggered, this, &MainWindow::openFile_onClicked);
+    connect(ui->actionCreate, &QAction::triggered, this, &MainWindow::createArchive_onClicked);
+    connect(ui->actionOpen, &QAction::triggered, this, &MainWindow::openArchive_onClicked);
     connect(ui->actionDelete, &QAction::triggered, this, &MainWindow::deleteFile_onClicked);
     connect(ui->actionExtract, &QAction::triggered, this, &MainWindow::extractArchive_onClicked);
     connect(ui->actionAddFiles, &QAction::triggered, this, &MainWindow::addFile_onClicked);
+    connect(ui->actionAddFolder, &QAction::triggered, this, &MainWindow::addFolder_onClicked);
     connect(ui->actionRename, &QAction::triggered, this, &MainWindow::renameFile_onClicked);
     connect(ui->actionExtractFile, &QAction::triggered, this, &MainWindow::extractFiles_onClicked);
+
+    setArchive(nullptr);
 }
 
 MainWindow::~MainWindow() {
@@ -85,12 +89,36 @@ void MainWindow::extractFiles_onClicked() {
     }
 }
 
-void MainWindow::openFile_onClicked() {
-    QString fileName = QFileDialog::getOpenFileName(this, "Open archive", "/home", "Archive files (*.taf);;All files (*.*)");
-    shared_ptr<Archive> archive = make_shared<Archive>(fileName.toStdString());
-    setArchive(archive);
+void MainWindow::openArchive_onClicked() {
+    try {
+        QString fileName = QFileDialog::getOpenFileName(this, "Open archive", "/home", "Archive files (*.taf);;All files (*.*)");
+        shared_ptr<Archive> archive = make_shared<Archive>(fileName.toStdString());
+        setArchive(archive);
 
-    this->update();
+        this->update();
+    }
+    catch (exception &e) {
+        showError("Error while opening archive", e.what());
+    }
+}
+
+void MainWindow::createArchive_onClicked() {
+    try {
+        QString fileName = QFileDialog::getSaveFileName(this, "Create archive", "/home", "Archive files (*.taf);;All files (*.*)");
+        string name = fileName.toStdString();
+        auto dotPos = name.find_last_of(".");
+
+        if (dotPos == string::npos || name.substr(dotPos + 1) != ".taf")
+            name += ".taf";
+
+        shared_ptr<Archive> archive = Archive::create(name);
+        setArchive(archive);
+
+        this->update();
+    }
+    catch (exception &e) {
+        showError("Error while creating archive", e.what());
+    }
 }
 
 void MainWindow::addFile_onClicked() {
@@ -104,6 +132,17 @@ void MainWindow::addFile_onClicked() {
     }
     catch (exception &e) {
         showError("Error while adding file", e.what());
+    }
+}
+
+void MainWindow::addFolder_onClicked() {
+    try {
+        QString dir = QFileDialog::getExistingDirectory(this, "Open folder", "/home", QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+
+        archive->addFolder(folder, dir.toStdString());
+    }
+    catch (exception &e) {
+        showError("Error while adding folder", e.what());
     }
 }
 
@@ -148,7 +187,7 @@ void MainWindow::renameFile_onClicked() {
 
         this->update();
     }
-    catch (runtime_error &e) {
+    catch (exception &e) {
         showError("Error while renaming file", e.what());
     }
 }
@@ -160,8 +199,11 @@ void MainWindow::setTableText(int row, int column, string text) {
 }
 
 void MainWindow::paintEvent(QPaintEvent *event) {
+    if (!archive || !folder)
+        return;
+
     ui->fileList->setRowCount(1 + folder->getSubfolders().size() + folder->getFiles().size());
-    this->setWindowTitle(QString::fromStdString(folder->getName() + " - Archiver"));
+    this->setWindowTitle(QString::fromStdString(folder->getPath() + " - Archiver"));
 
     setTableText(0, 0, "...");
     setTableText(0, 1, "");
@@ -183,7 +225,7 @@ void MainWindow::paintEvent(QPaintEvent *event) {
         setTableText(row, 2, to_string(file->getHeader().compressedSize));
 
         char buffer[32];
-        tm *ptm = localtime(&file->getHeader().compressedSize);
+        tm *ptm = localtime(&file->getHeader().lastAccessTime);
         strftime(buffer, 32, "%Y-%m-%d %H:%M:%S", ptm);
         setTableText(row, 3, string(buffer));
         row++;
@@ -211,6 +253,17 @@ void MainWindow::on_fileList_cellDoubleClicked(int row, int column) {
 }
 
 void MainWindow::setArchive(shared_ptr<Archive> archive) {
-    this->archive = archive;
-    this->folder = archive->getParentFolder();
+    if (archive) {
+        this->archive = archive;
+        this->folder = archive->getParentFolder();
+    }
+
+    bool nul = (archive == nullptr);
+
+    ui->fileList->setVisible(!nul);
+    ui->noArchiveLoadedLabel->setVisible(nul);
+    ui->actionExtract->setEnabled(!nul);
+    ui->actionAddFiles->setEnabled(!nul);
+    ui->actionAddFolder->setEnabled(!nul);
+    ui->menuFile->setEnabled(!nul);
 }

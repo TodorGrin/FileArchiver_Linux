@@ -5,11 +5,15 @@
 #include <regex>
 
 Folder::Folder(string name) {
+    validateName(name);
+
     this->parentFolder = nullptr;
     this->name = name;
 }
 
 Folder::Folder(shared_ptr<Folder> parentFolder, string name) {
+    validateName(name);
+
     this->parentFolder = parentFolder;
     this->name = name;
 }
@@ -28,6 +32,24 @@ void Folder::clear() {
     files.clear();
 }
 
+shared_ptr<Folder> Folder::createSubfolder(string name) {
+    for (auto folder : subfolders)
+        if (folder->getName() == name)
+            throw runtime_error("Folder \"" + folder->getPath() + "\" already exists");
+
+    shared_ptr<Folder> folder = make_shared<Folder>(shared_from_this(), name);
+    subfolders.push_back(folder);
+
+    return folder;
+}
+
+void Folder::validateName(string name) {
+    regex e("[\\/<>\\|:&]");
+
+    if (regex_search(name, e))
+        throw runtime_error("Folder name can't contain symbols /<>|:&");
+}
+
 void Folder::updateFileNames() {
     string path = getPath();
 
@@ -39,10 +61,7 @@ void Folder::updateFileNames() {
 }
 
 void Folder::setName(string newName) {
-    regex e("[\\/<>\\|:&]");
-
-    if (regex_search(name, e))
-        throw runtime_error("Folder name can't contain symbols /<>|:&");
+    validateName(name);
 
     this->name = newName;
     updateFileNames();

@@ -16,17 +16,20 @@ class Folder : public enable_shared_from_this<Folder> {
         vector<shared_ptr<Folder>> subfolders;
         vector<shared_ptr<File>> files;
 
+        void validateName(string name);
+
         void addFile(shared_ptr<File> file, string remainingPath);
         void deleteFile(shared_ptr<File> file, string remainingPath);
         void updateFileNames();
 
     public:
-        Folder(string name);
-        Folder(shared_ptr<Folder> parentFolder, string name);
+        explicit Folder(string name);
+        explicit Folder(shared_ptr<Folder> parentFolder, string name);
         ~Folder();
 
         void addFile(shared_ptr<File> file);
         void deleteFile(shared_ptr<File> file);
+        shared_ptr<Folder> createSubfolder(string name);
 
         void clear();
         void extract(istream &is, string extractPath);

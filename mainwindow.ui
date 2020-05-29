@@ -57,6 +57,24 @@
       </column>
      </widget>
     </item>
+    <item row="1" column="0">
+     <widget class="QLabel" name="noArchiveLoadedLabel">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>14</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;No archive loaded&lt;/p&gt;&lt;p&gt;Press Archive-&amp;gt;Open&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+    </item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -77,11 +95,13 @@
     <property name="title">
      <string>Archive</string>
     </property>
+    <addaction name="actionCreate"/>
     <addaction name="actionOpen"/>
     <addaction name="separator"/>
     <addaction name="actionExtract"/>
     <addaction name="separator"/>
     <addaction name="actionAddFiles"/>
+    <addaction name="actionAddFolder"/>
    </widget>
    <widget class="QMenu" name="menuFile">
     <property name="title">
@@ -96,6 +116,9 @@
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionOpen">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Open</string>
    </property>
@@ -132,6 +155,16 @@
   <action name="actionAddFiles">
    <property name="text">
     <string>Add files</string>
+   </property>
+  </action>
+  <action name="actionCreate">
+   <property name="text">
+    <string>Create</string>
+   </property>
+  </action>
+  <action name="actionAddFolder">
+   <property name="text">
+    <string>Add folder</string>
    </property>
   </action>
  </widget>

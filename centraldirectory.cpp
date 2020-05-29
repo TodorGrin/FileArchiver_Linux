@@ -57,3 +57,12 @@ void CentralDirectory::deleteFile(shared_ptr<File> file) {
             f->getHeader().offset -= closestFileOffset - file->getHeader().offset;
     }
 }
+
+vector<shared_ptr<File>>& CentralDirectory::getFiles() {
+    return files;
+}
+
+int CentralDirectory::getOffset() {
+    return offset;
+}
+

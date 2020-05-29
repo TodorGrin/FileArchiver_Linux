@@ -8,9 +8,11 @@
 using namespace std;
 
 class CentralDirectory {
-	public:
+    private:
         vector<shared_ptr<File>> files;
         int offset;
+
+	public:
 
 		CentralDirectory();
 
@@ -18,6 +20,9 @@ class CentralDirectory {
 		void read(istream &is);
 
         void deleteFile(shared_ptr<File> file);
+
+        vector<shared_ptr<File>>& getFiles();
+        int getOffset();
 };
 
 #endif // CENTRALDIRECTORY_H

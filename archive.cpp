@@ -3,6 +3,9 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <algorithm>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <string.h>
 
 Archive::Archive() {
     parentFolder = make_shared<Folder>("");
@@ -12,6 +15,9 @@ Archive::Archive(string path) : Archive() {
     this->path = path;
 
     ifstream is(path, ios::binary);
+    if (!is.is_open())
+        throw std::runtime_error("Can't open \"" + path + "\"");
+
     centralDirectory.read(is);
 
     updateHierarchy();
@@ -21,10 +27,25 @@ Archive::~Archive() {
     parentFolder->clear();
 }
 
+shared_ptr<Archive> Archive::create(string path) {
+    shared_ptr<Archive> archive = make_shared<Archive>();
+    archive->path = path;
+
+    ofstream os(path, ios::binary);
+
+    if (!os.is_open())
+        throw std::runtime_error("Failed to create \"" + path + "\"");
+
+    archive->centralDirectory.write(os);
+    os.close();
+
+    return archive;
+}
+
 void Archive::updateHierarchy() {
     parentFolder->clear();
 
-    for (auto &f : centralDirectory.files)
+    for (auto &f : centralDirectory.getFiles())
         parentFolder->addFile(f);
 }
 
@@ -36,16 +57,22 @@ void Archive::truncateArchive(int size) {
 
 void Archive::addFile(shared_ptr<Folder> folder, string filePath) {
     auto lastSlashPos = filePath.find_last_of("/");
-    string pathInArchive = folder->getPath() + "/";
+    string fileName;
 
     if (lastSlashPos == string::npos)
-        pathInArchive += filePath;
+        fileName = filePath;
     else
-        pathInArchive += filePath.substr(lastSlashPos + 1);
+        fileName = filePath.substr(lastSlashPos + 1);
+
+    for (auto file : folder->getFiles())
+        if (file->getName() == filePath.substr(lastSlashPos + 1))
+            throw runtime_error("File \"" + fileName + "\" already exists in folder");
+
+    string pathInArchive = folder->getPath() + "/" + fileName;
 
     FileHeader fileHeader(pathInArchive);
-    fileHeader.readStatus(filePath);
-    fileHeader.offset = centralDirectory.offset;
+    fileHeader.readMetadata(filePath);
+    fileHeader.offset = centralDirectory.getOffset();
 
     fstream os(path, ios::out | ios::in | ios::binary);
     if (!os.is_open())
@@ -53,14 +80,44 @@ void Archive::addFile(shared_ptr<Folder> folder, string filePath) {
 
     shared_ptr<File> file = make_shared<File>(nullptr, fileHeader);
 
-    os.seekp(centralDirectory.offset);
+    os.seekp(centralDirectory.getOffset());
     compressFile(file, filePath, os);
 
-    centralDirectory.files.push_back(file);
+    centralDirectory.getFiles().push_back(file);
     parentFolder->addFile(file);
 
     centralDirectory.write(os);
     os.close();
+}
+
+void Archive::addFolder(shared_ptr<Folder> folder, string folderPath) {
+    DIR *d;
+    struct dirent *dir;
+
+    d = opendir(folderPath.c_str());
+    if (!d) throw runtime_error("Can't open folder \"" + folderPath + "\"");
+
+    string folderName = (folderPath.find_last_of("/") == string::npos) ? folderPath : folderPath.substr(folderPath.find_last_of("/") + 1);
+    shared_ptr<Folder> newFolder = folder->createSubfolder(folderName);
+
+    while ((dir = readdir(d))) {
+        struct stat st;
+        string direntPath = folderPath + "/" + dir->d_name;
+
+        if (stat(direntPath.c_str(), &st) != 0)
+            throw runtime_error("Can't read stats of \"" + direntPath + "\": " + strerror(errno));
+
+        if (S_ISREG(st.st_mode))
+            Archive::addFile(newFolder, direntPath);
+        else if (S_ISDIR(st.st_mode)) {
+            if (strcmp(dir->d_name, ".") != 0 && strcmp(dir->d_name, "..") != 0)
+                Archive::addFolder(newFolder, direntPath);
+        }
+        else
+            throw runtime_error("Unknown file type: \"" + direntPath + "\"");
+    }
+
+    closedir(d);
 }
 
 void Archive::write(string path) {
@@ -69,7 +126,7 @@ void Archive::write(string path) {
     if (!os.is_open())
         throw std::runtime_error("Failed to create \"" + path + "\"");
 
-    for (auto &f : centralDirectory.files) {
+    for (auto &f : centralDirectory.getFiles()) {
         compressFile(f, f->getHeader().name, os);
 	}
 
@@ -121,9 +178,9 @@ void Archive::extractFolders(vector<shared_ptr<Folder> > folders, string path) {
 }
 
 void Archive::deleteFile(shared_ptr<File> file) {
-    int shiftStart = centralDirectory.offset, shiftEnd = centralDirectory.offset;
+    int shiftStart = centralDirectory.getOffset(), shiftEnd = centralDirectory.getOffset();
 
-    for (auto &f : centralDirectory.files) {
+    for (auto &f : centralDirectory.getFiles()) {
         if (f->getHeader().offset > file->getHeader().offset && f->getHeader().offset < shiftStart)
             shiftStart = f->getHeader().offset;
     }
@@ -164,7 +221,7 @@ void Archive::renameFile(shared_ptr<File> file, string newName) {
     if (!fs.is_open())
         throw runtime_error("Can't open \"" + this->path + "\"");
 
-    fs.seekp(centralDirectory.offset);
+    fs.seekp(centralDirectory.getOffset());
     centralDirectory.write(fs);
     int fileSize = fs.tellp();
     fs.close();
@@ -196,7 +253,7 @@ void Archive::renameFolder(shared_ptr<Folder> folder, string newName) {
     if (!fs.is_open())
         throw runtime_error("Can't open \"" + this->path + "\"");
 
-    fs.seekp(centralDirectory.offset);
+    fs.seekp(centralDirectory.getOffset());
     centralDirectory.write(fs);
     int fileSize = fs.tellp();
     fs.close();

@@ -18,6 +18,7 @@ File::File(shared_ptr<Folder> parentFolder, FileHeader header) {
 void File::extract(istream &is, string extractPath) {
     is.seekg(header.offset, ios::beg);
     Huffman::decompress(is, extractPath + "/" + name);
+    header.setMetadata(extractPath + "/" + name);
 }
 
 void File::setParentFolder(shared_ptr<Folder> parentFolder) {

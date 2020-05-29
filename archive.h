@@ -17,16 +17,18 @@ class Archive {
         void truncateArchive(int size);
 
 	public:
-
-		Archive();
-        Archive(string path);
+        explicit Archive();
+        explicit Archive(string path);
         ~Archive();
+
+        static shared_ptr<Archive> create(string path);
 
         void addFile(shared_ptr<Folder> folder, string filePath);
         void deleteFile(shared_ptr<File> file);
         void renameFile(shared_ptr<File> file, string newName);
         void extractFiles(vector<shared_ptr<File>> files, string path);
 
+        void addFolder(shared_ptr<Folder> folder, string folderPath);
         void deleteFolder(shared_ptr<Folder> folder);
         void renameFolder(shared_ptr<Folder> folder, string newName);
         void extractFolders(vector<shared_ptr<Folder>> folders, string path);

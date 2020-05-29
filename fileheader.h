@@ -13,12 +13,13 @@ class FileHeader {
         off_t size;
         off_t compressedSize;
         string name;
-        time_t lastAccessTime;
+        time_t lastAccessTime, lastModificationTime;
 
         FileHeader();
         FileHeader(std::string name);
 
-        void readStatus(string filePathOnDisk);
+        void readMetadata(string filePathOnDisk);
+        void setMetadata(string filePathOnDisk);
 
         void write(std::ostream &os);
         void read(std::istream &is);

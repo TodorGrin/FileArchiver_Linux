@@ -13,7 +13,7 @@ int main(int argc, char *argv[]) {
 	QApplication a(argc, argv);
 
 	MainWindow w;
-    w.setArchive(make_shared<Archive>("out.taf"));
+    //w.setArchive(make_shared<Archive>("out.taf"));
     w.show();
 
 	return a.exec();
